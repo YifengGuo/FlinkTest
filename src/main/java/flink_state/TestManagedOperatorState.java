@@ -23,14 +23,19 @@ import java.util.List;
  */
 public class TestManagedOperatorState {
     public static void main(String[] args) throws Exception {
-        String path = "src/main/java/flink_state/sink_output/test_buffer_sink.txt";
+        String path = "src/main/java/flink_state/sink_output/";
         Tuple2<String, Integer> t1 = new Tuple2<>("id", 12345);
-        Tuple2<String, Integer>[] arr = new Tuple2[]{t1, Tuple2.of("salary", 1000),
-                Tuple2.of("phone_num", 732888888)};
+        Tuple2<String, Integer> t2 = new Tuple2<>("salary", 1000);
+        Tuple2<String, Integer> t3 = new Tuple2<>("phone_num", 732888888);
+
+        Tuple2<String, Integer>[] arr = (Tuple2<String, Integer>[]) new Tuple2[]{t1, t2, t3};
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.fromCollection(Arrays.asList(arr))
-                .addSink(new BufferingSinkFunction(2, path));
-        env.execute();
+//        env.fromCollection(Arrays.asList(arr))
+//                .addSink(new BufferingSinkFunction(2));
+        env.fromElements(Tuple2.of("id", 12345), Tuple2.of("salary", 1000), Tuple2.of("phone_num", 732888888))
+                .keyBy(0)
+                .addSink(new BufferingSinkFunction(1, path));
+        env.execute("buffer elements");
     }
 }
 
@@ -46,7 +51,7 @@ class BufferingSinkFunction implements SinkFunction<Tuple2<String, Integer>>, Ch
 
     private final int threshold;
 
-    private final String path;
+     private final String path;
 
     // constructor
     public BufferingSinkFunction(int threshold, String path) {
@@ -58,20 +63,15 @@ class BufferingSinkFunction implements SinkFunction<Tuple2<String, Integer>>, Ch
     @Override
     public void invoke(Tuple2<String, Integer> value, Context context) throws Exception {
         bufferedElements.add(value); // buffer elements before sinking them outside
-
-        File file = new File("src/main/java/flink_state/sink_output/test_buffer_sink.txt");
-        if (!file.exists()) {
-            file.createNewFile();
-        }
-
         if (bufferedElements.size() == threshold) {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(path));
+            File file = new File(path + "" + value.f0 + ".txt");
+            FileWriter fw = new FileWriter(file);
             for (Tuple2<String, Integer> tuple : bufferedElements) {
                 // sink value to the outside
-                bw.write(tuple.toString() + "\n");
+                fw.write(tuple.toString() + "\n");
             }
-            bw.flush();
-            bw.close();
+            fw.flush();
+            fw.close();
             bufferedElements.clear();
         }
     }
