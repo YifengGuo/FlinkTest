@@ -32,8 +32,7 @@ public class TestManagedOperatorState {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 //        env.fromCollection(Arrays.asList(arr))
 //                .addSink(new BufferingSinkFunction(2));
-        env.fromElements(Tuple2.of("id", 12345), Tuple2.of("salary", 1000), Tuple2.of("phone_num", 732888888))
-                .keyBy(0)
+        env.fromElements(Tuple2.of("id", 12345), Tuple2.of("salary", 1000), Tuple2.of("phone_num", 732888888), Tuple2.of("id", 45678))
                 .addSink(new BufferingSinkFunction(1, path));
         env.execute("buffer elements");
     }
