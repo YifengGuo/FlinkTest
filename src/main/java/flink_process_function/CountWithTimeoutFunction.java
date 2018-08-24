@@ -15,6 +15,21 @@ import org.slf4j.LoggerFactory;
  */
 
 /**
+ * use case of process function: access to the basic building blocks of all (acyclic) streaming applications
+ * so a ProcessFunction could have access to:
+ *                              1. events (elements in streaming)
+ *                              2. state (fault-tolerant, consistent, only on keyed stream)), by initialize
+ *                                 some kind of Keyed State (ValueState, ListState, MapState etc) and get access to it
+ *                                 by initialing StateDescriptor in open()
+ *                              3. timers (event time and processing time, only on keyed stream)
+ *                                 So during process function, it can get timestamp or register time service via
+ *                                 runtime context, and complete need like onTimer trigger etc.
+ *
+ *  The ProcessFunction can be thought of as a FlatMapFunction with access to keyed state and timers.
+ *  It handles events by being invoked for each event received in the input stream(s).
+ */
+
+/**
  * the goal is to build a key-count pair and and emits a key/count pair whenever a (customized time) like a
  * minute passes (in event time) without an update for that key
  */
