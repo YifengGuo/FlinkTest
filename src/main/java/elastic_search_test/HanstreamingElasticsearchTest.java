@@ -172,9 +172,10 @@ public class HanstreamingElasticsearchTest {
     public void certainFieldFetch() {
         QueryBuilder qb = QueryBuilders.matchAllQuery();
         SearchResponse response = connection.client().prepareSearch("saas_*").setTypes("email")
+                .setQuery(qb)
                 .setFetchSource(new String[]{"size"}, null)
-                .setScroll(new TimeValue(100))
-                //.setSize(100)
+                .setScroll(new TimeValue(1000))
+                .setSize(100)
                 .execute()
                 .actionGet();
 
@@ -184,14 +185,14 @@ public class HanstreamingElasticsearchTest {
             for (SearchHit hit : response.getHits().getHits()) {
                 // {"size":"21644"}
                 String data = hit.getSourceAsString();
-//                long size = Long.valueOf(data.replaceAll("[{, }]", "").split(":")[1]);
-                long size = Long.valueOf(data.replace("\"", "0").split(":")[1]);
+                long size = Long.parseLong(data.replaceAll("[{, }, \"]", "").split(":")[1]);
+//                long size = Long.valuef(data.replace("\"", "0").split(":")[1]);
                 // System.out.println("hit" + count++ + " " + hit.getSourceAsString());
                 System.out.println(size);
             }
 
             response = connection.client().prepareSearchScroll(response.getScrollId())
-                    .setScroll(new TimeValue(100))
+                    .setScroll(new TimeValue(1000))
                     .execute()
                     .actionGet();
 
