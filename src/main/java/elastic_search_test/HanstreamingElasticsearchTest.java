@@ -137,7 +137,7 @@ public class HanstreamingElasticsearchTest {
                 .addAggregation(termsBuilder)
                 .addAggregation(avgBuilder)
                 .setScroll(new TimeValue(100))
-                .setSize(10)
+                .setSize(10000)
                 .execute()
                 .actionGet();
 
@@ -158,7 +158,7 @@ public class HanstreamingElasticsearchTest {
         Iterator<Terms.Bucket> roleIt = roleTypeAgg.getBuckets().iterator();
         while (roleIt.hasNext()) {
             Terms.Bucket bucket = roleIt.next();
-            System.out.println(bucket.getKey());
+            System.out.println(bucket.getKey() + " " + bucket.getDocCount());
         }
         System.out.println();
 
@@ -197,5 +197,44 @@ public class HanstreamingElasticsearchTest {
                     .actionGet();
 
         } while (response.getHits().getHits().length != 0);
+    }
+
+    @Test
+    public void testMatchallQuery() {
+        // single query only retrieve data whose size == count in setSize()
+        // if we need to fetch all the documents, use while loop to get so.
+        QueryBuilder qb = QueryBuilders.matchAllQuery();
+        SearchResponse response = connection.client().prepareSearch("saas_*").setTypes("email")
+                .setQuery(qb)
+                .setFetchSource(new String[]{"role"}, null)
+                .setScroll(new TimeValue(1000))
+                .setSize(100)
+                .execute()
+                .actionGet();
+        long count  = 0;
+        for (SearchHit hit : response.getHits().getHits()) {
+            String data = hit.getSourceAsString();
+            System.out.println("hit" + count++ + " " + hit.getSourceAsString());
+            // System.out.println(size);
+        }
+
+        // what if we add an aggregation
+        TermsBuilder roleAgg = AggregationBuilders.terms("roleType").field("role");
+        SearchResponse response2 = connection.client().prepareSearch("saas_*").setTypes("email")
+                .setQuery(qb)
+                .setFetchSource(new String[]{"role"}, null)
+                .addAggregation(roleAgg)
+                .setScroll(new TimeValue(1000))
+                .setSize(100)
+                .execute()
+                .actionGet();
+        Map<String, Aggregation> map = response2.getAggregations().asMap();
+        StringTerms roles = (StringTerms) map.get("roleType");
+        for (Terms.Bucket term : roles.getBuckets()) {
+            System.out.println(term.getKey() + " " + term.getDocCount());
+        }
+
+        // so if we are aggregating on some field, the aggregation process happens on
+        // all the documents of given index/type
     }
 }
