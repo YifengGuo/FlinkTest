@@ -51,4 +51,9 @@ public class DatasourceConstant {
     public final static String RULE_JAR = "rule.jar";
     public final static int SAMPLE_COUNT = 5;
     public final static int ES_BULK_SIZE = 500;
+
+    public final static String UEBA_ALARM_INDEX = "ueba_alarm";
+
+    public final static String UEBA_SETTINGS_INDEX = "ueba_settings";
+
 }

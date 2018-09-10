@@ -2,8 +2,13 @@ package elastic_search_test;
 
 import elastic_search_test.config.ElasticsearchConnection;
 import org.apache.lucene.index.Term;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.index.reindex.DeleteByQueryRequestBuilder;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -28,6 +33,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileWriter;
 import java.net.UnknownHostException;
 import java.util.*;
 
@@ -237,4 +243,87 @@ public class HanstreamingElasticsearchTest {
         // so if we are aggregating on some field, the aggregation process happens on
         // all the documents of given index/type
     }
+
+    @Test
+    public void getAnomalyScenarios() {
+        QueryBuilder queryBuilder = QueryBuilders.boolQuery();
+        ((BoolQueryBuilder) queryBuilder).must(QueryBuilders.termQuery("scenario_id", "AWOk_sh5qoKXGlv_Hxfk"));
+        ((BoolQueryBuilder) queryBuilder).must(QueryBuilders.existsQuery("scenario"));
+        SearchResponse updateSearchResponse = connection.client().prepareSearch(UEBA_ALARM_INDEX).setTypes(ANOMALY_SCENARIOS)
+                .setQuery(queryBuilder)
+                .setSize(10000)
+                .setScroll(new TimeValue(1000))
+                .execute().actionGet();
+
+        long count = 0;
+        do {
+            for (SearchHit hit : updateSearchResponse.getHits().getHits()) {
+                System.out.println(hit.getSourceAsString());
+//                String indexId = hit.getId();
+//                // update new scenario name one by one
+//                UpdateRequest updateRequest = new UpdateRequest().index(UEBA_ALARM_INDEX)
+//                        .type(ANOMALY_SCENARIOS)
+//                        .id(indexId)
+//                        .doc("scenario", scenarioName);
+//                LOG.info("scenario_name " + count++ + " " + "{}, id is {}", scenarioName, indexId);
+//                connection.client().update(updateRequest);
+            }
+            updateSearchResponse = connection.client().prepareSearchScroll(updateSearchResponse.getScrollId())
+                    .setScroll(new TimeValue(1000))
+                    .execute().actionGet();
+
+        } while (updateSearchResponse.getHits().getHits().length != 0);
+    }
+
+    @Test
+    public void recoverDataFrom31() throws Exception {
+        // first get clean data from 31 port and when traversing on each hit
+        // initialize new connection to 172 and update its source with source of 31 hit
+        // after that data in 172 are almost clean except field scenario is dirty.
+        // then get data from 172 and directly update scenario which is "User after hour logon111" to ""
+        connection.connect(ES_CLUSTER_NAME, "172.16.150.172", ES_PORT);
+        QueryBuilder queryBuilder = QueryBuilders.boolQuery();
+        ((BoolQueryBuilder) queryBuilder).must(QueryBuilders.termQuery("scenario_id", "AWOk_sh5qoKXGlv_Hxfk"));
+        ((BoolQueryBuilder) queryBuilder).must(QueryBuilders.termQuery("scenario", ""));
+        // ((BoolQueryBuilder) queryBuilder).must(QueryBuilders.existsQuery("scenario"));
+        SearchResponse updateSearchResponse = connection.client().prepareSearch(UEBA_ALARM_INDEX).setTypes(ANOMALY_SCENARIOS)
+                .setQuery(queryBuilder)
+                .setSize(10000)
+                .setScroll(new TimeValue(1000))
+                .execute().actionGet();
+//        FileWriter fw = new FileWriter("/Users/guoyifeng/IdeaProjects/FlinkTest/src/main/java/elastic_search_test/output/whole_scenario_from_31.txt");
+        for (SearchHit hit : updateSearchResponse.getHits().getHits()) {
+//            fw.write(hit.getSourceAsString() + "\n");
+            String indexId = hit.getId();
+//            ElasticsearchConnection connectionCurr = new ElasticsearchConnection();
+//            connectionCurr.connect(ES_CLUSTER_NAME, "172.16.150.172", 29300);
+            UpdateRequest updateRequest = new UpdateRequest().index(UEBA_ALARM_INDEX)
+                            .type(ANOMALY_SCENARIOS)
+                            .id(indexId)
+                            .doc("scenario", null);
+            connection.client().update(updateRequest);
+            // connection.close();
+            System.out.println(hit.getSourceAsString());
+        }
+//        fw.close();
+    }
+
+    @Test
+    public void test172Data() throws Exception {
+        connection.connect(ES_CLUSTER_NAME, "172.16.150.172", ES_PORT);
+        QueryBuilder queryBuilder = QueryBuilders.boolQuery();
+        ((BoolQueryBuilder) queryBuilder).must(QueryBuilders.termQuery("scenario_id", "AWOk_sh5qoKXGlv_Hxfk"));
+        ((BoolQueryBuilder) queryBuilder).must(QueryBuilders.existsQuery("scenario"));
+        SearchResponse updateSearchResponse = connection.client().prepareSearch(UEBA_ALARM_INDEX).setTypes(ANOMALY_SCENARIOS)
+                .setQuery(queryBuilder)
+                .setSize(10000)
+                .setScroll(new TimeValue(1000))
+                .execute().actionGet();
+
+        for (SearchHit hit : updateSearchResponse.getHits().getHits()) {
+            System.out.println(hit.getSourceAsString());
+        }
+    }
+
+
 }
