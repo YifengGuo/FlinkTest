@@ -1,0 +1,24 @@
+PATH ========> /Library/Java/JavaVirtualMachines/jdk1.8.0_181.jdk/Contents/Home/bin:/anaconda3/bin:/Users/guoyifeng/bin:/usr/local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/hadoop-3.0.3/bin:/usr/local/apache-maven-3.5.4/bin:/usr/local/Cellar/apache-flink/1.6.0/bin:/usr/local/groovy-3.0.0-alpha-3/bin
+SHELL ========> /bin/zsh
+PAGER ========> less
+FLINK_HOME ========> /usr/local/Cellar/apache-flink/1.6.0
+LSCOLORS ========> Gxfxcxdxbxegedabagacad
+JAVA_MAIN_CLASS_29650 ========> com.intellij.rt.execution.junit.JUnitStarter
+JAVA_HOME ========> /Library/Java/JavaVirtualMachines/jdk1.8.0_181.jdk/Contents/Home
+OLDPWD ========> /Applications/IntelliJ IDEA.app/Contents/bin
+USER ========> guoyifeng
+ZSH ========> /Users/guoyifeng/.oh-my-zsh
+TMPDIR ========> /var/folders/yq/wvrfzj597vq9pxr2n__pnzm80000gn/T/
+SSH_AUTH_SOCK ========> /private/tmp/com.apple.launchd.SSrl9m1cgg/Listeners
+GROOVY_HOME ========> /usr/local/groovy-3.0.0-alpha-3
+MAVEN_HOME ========> /usr/local/apache-maven-3.5.4
+XPC_FLAGS ========> 0x0
+HADOOP_HOME ========> /usr/local/hadoop-3.0.3
+__CF_USER_TEXT_ENCODING ========> 0x1F5:0x0:0x0
+Apple_PubSub_Socket_Render ========> /private/tmp/com.apple.launchd.VvrrOunLce/Render
+LESS ========> -R
+LOGNAME ========> guoyifeng
+LC_CTYPE ========> 
+PWD ========> /Users/guoyifeng/IdeaProjects/FlinkTest
+XPC_SERVICE_NAME ========> com.jetbrains.intellij.5280
+HOME ========> /Users/guoyifeng
