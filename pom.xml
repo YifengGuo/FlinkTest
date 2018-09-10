@@ -75,6 +75,16 @@
         <version>4.12</version>
         <scope>compile</scope>
     </dependency>
+    <dependency>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch</artifactId>
+        <version>5.6.10</version>
+    </dependency>
+    <dependency>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch</artifactId>
+        <version>2.3.4</version>
+    </dependency>
 
 </dependencies>
 </project>
