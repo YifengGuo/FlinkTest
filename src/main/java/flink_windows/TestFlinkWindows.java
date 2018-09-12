@@ -10,11 +10,13 @@ import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
+import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.evictors.Evictor;
 import org.apache.flink.streaming.api.windowing.time.Time;
@@ -88,13 +90,13 @@ public class TestFlinkWindows {
                     @Override
                     public void flatMap(String s, Collector<FlinkTestEvent> collector) throws Exception {
                         String[] tokens = s.split(" ");
-                        FlinkTestEvent res = new FlinkTestEvent(tokens[0], Long.parseLong(tokens[1]), Long.parseLong(tokens[2]));
+                        FlinkTestEvent res = new FlinkTestEvent(tokens[0], Long.parseLong(tokens[1]), System.currentTimeMillis());
                         collector.collect(res);
                     }
                 })
                 .assignTimestampsAndWatermarks(new MyWatermarkAssigner())
                 .keyBy(new MyKeySelector())
-                .window(TumblingEventTimeWindows.of(Time.seconds(5)))
+                .window(TumblingEventTimeWindows.of(Time.seconds(10)))
 //                .allowedLateness(Time.seconds(0))
                 .apply(new MyWindowFunction());
 
@@ -125,22 +127,21 @@ class Splitter extends RichFlatMapFunction<String, FlinkTestEvent> {
     }
 }
 
-class MyWatermarkAssigner implements AssignerWithPeriodicWatermarks<FlinkTestEvent> {
-    private final long maxOutOfOrderness = 2000; // 2 seconds
+class MyWatermarkAssigner implements AssignerWithPunctuatedWatermarks<FlinkTestEvent> {
+    private final long maxOutOfOrderness = 5000; // 2 seconds
 
     private long currentMaxTimestamp;
 
     @Nullable
     @Override
-    public Watermark getCurrentWatermark() {
+    public Watermark checkAndGetNextWatermark(FlinkTestEvent lastElement, long extractedTimestamp) {
         return new Watermark(currentMaxTimestamp - maxOutOfOrderness);
     }
 
     @Override
     public long extractTimestamp(FlinkTestEvent element, long previousElementTimestamp) {
-        long timestamp = element.lastModifiedTime;
-        currentMaxTimestamp = Math.max(timestamp, maxOutOfOrderness);
-        return timestamp;
+        currentMaxTimestamp = Math.max(element.lastModifiedTime, element.lastModifiedTime);
+        return element.lastModifiedTime;
     }
 }
 
