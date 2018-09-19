@@ -4,14 +4,12 @@ import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.KeyedStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
@@ -80,6 +78,7 @@ public class TestFlinkWindows {
 
     /**
      * Test watermark periodically change will potentially change the size of tumbling window
+     * not quite successful
      * @throws Exception
      */
     @Test
@@ -112,45 +111,53 @@ public class TestFlinkWindows {
     }
 
     @Test
+    public void testWatermark() throws Exception {
+        initializeEnv();
+        DataStreamSink<FlinkTestEvent> output = input
+                .flatMap(new Splitter())
+                .assignTimestampsAndWatermarks(new MyWatermarkAssigner())
+                .addSink(new MySinkFunction());
+        env.execute();
+    }
+
+    @Test
     public void testAggregateFunction() throws Exception {
 
     }
-}
 
-
-class Splitter extends RichFlatMapFunction<String, FlinkTestEvent> {
-    @Override
-    public void flatMap(String s, Collector<FlinkTestEvent> collector) throws Exception {
-        String[] tokens = s.split(" ");
-        FlinkTestEvent res = new FlinkTestEvent(tokens[0], Long.parseLong(tokens[1]), System.currentTimeMillis());
-        collector.collect(res);
-    }
-}
-
-class MyWatermarkAssigner implements AssignerWithPunctuatedWatermarks<FlinkTestEvent> {
-    private final long maxOutOfOrderness = 5000; // 2 seconds
-
-    private long currentMaxTimestamp;
-
-    @Nullable
-    @Override
-    public Watermark checkAndGetNextWatermark(FlinkTestEvent lastElement, long extractedTimestamp) {
-        return new Watermark(currentMaxTimestamp - maxOutOfOrderness);
+    class Splitter extends RichFlatMapFunction<String, FlinkTestEvent> {
+        @Override
+        public void flatMap(String s, Collector<FlinkTestEvent> collector) throws Exception {
+            String[] tokens = s.split(" ");
+            FlinkTestEvent res = new FlinkTestEvent(tokens[0], Long.parseLong(tokens[1]), System.currentTimeMillis());
+            collector.collect(res);
+        }
     }
 
-    @Override
-    public long extractTimestamp(FlinkTestEvent element, long previousElementTimestamp) {
-        currentMaxTimestamp = Math.max(element.lastModifiedTime, element.lastModifiedTime);
-        return element.lastModifiedTime;
-    }
-}
+    class MyWatermarkAssigner implements AssignerWithPunctuatedWatermarks<FlinkTestEvent> {
+        private final long maxOutOfOrderness = 5000; // n seconds
 
-class MyKeySelector implements KeySelector<FlinkTestEvent, Object> {
-    @Override
-    public String getKey(FlinkTestEvent flinkTestEvent) throws Exception {
-        return flinkTestEvent.key;
+        private long currentMaxTimestamp;
+
+        @Nullable
+        @Override
+        public Watermark checkAndGetNextWatermark(FlinkTestEvent lastElement, long extractedTimestamp) {
+            return new Watermark(extractedTimestamp);
+        }
+
+        @Override
+        public long extractTimestamp(FlinkTestEvent element, long previousElementTimestamp) {
+            currentMaxTimestamp = Math.max(element.lastModifiedTime, element.lastModifiedTime);
+            return element.lastModifiedTime;
+        }
     }
-}
+
+    class MyKeySelector implements KeySelector<FlinkTestEvent, Object> {
+        @Override
+        public String getKey(FlinkTestEvent flinkTestEvent) throws Exception {
+            return flinkTestEvent.key;
+        }
+    }
 
 //class MyProcessWindowFunction extends ProcessFunction<FlinkTestEvent, Tuple2<String, FlinkTestEvent>> {
 //    @Override
@@ -160,11 +167,23 @@ class MyKeySelector implements KeySelector<FlinkTestEvent, Object> {
 //    }
 //}
 
-class MyWindowFunction implements WindowFunction<FlinkTestEvent, Tuple2<String, FlinkTestEvent>, Object, TimeWindow> {
-    @Override
-    public void apply(Object key, TimeWindow window, Iterable<FlinkTestEvent> input, Collector<Tuple2<String, FlinkTestEvent>> out) throws Exception {
-        for (FlinkTestEvent event : input) {
-            out.collect(new Tuple2<>(window.toString() + " " + window.maxTimestamp(), event));
+    class MyWindowFunction implements WindowFunction<FlinkTestEvent, Tuple2<String, FlinkTestEvent>, Object, TimeWindow> {
+        @Override
+        public void apply(Object key, TimeWindow window, Iterable<FlinkTestEvent> input, Collector<Tuple2<String, FlinkTestEvent>> out) throws Exception {
+            for (FlinkTestEvent event : input) {
+                out.collect(new Tuple2<>(window.toString() + " " + window.maxTimestamp(), event));
+            }
         }
     }
+
+    class MySinkFunction extends RichSinkFunction<FlinkTestEvent> {
+        @Override
+        public void invoke(FlinkTestEvent value, Context context) throws Exception {
+            System.out.println(context.currentWatermark() + " --> " + value);
+        }
+
+    }
 }
+
+
+
