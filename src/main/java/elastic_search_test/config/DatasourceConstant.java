@@ -2,7 +2,7 @@ package elastic_search_test.config;
 
 public class DatasourceConstant {
     public final static String ES_CLUSTER_NAME = "es-jw-darpa";
-    public final static String ES_HOSTS = "172.16.150.31";
+    public final static String ES_HOSTS = "172.16.150.172";
     public final static int ES_PORT = 29300;
     public final static String DATASOURCE_SETTING_INDEX = "event_*";
     public final static String DATASOURCE_SETTING_TYPE = "event";

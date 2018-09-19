@@ -61,12 +61,13 @@ public class HanstreamingElasticsearchTest {
      */
     @Test
     public void querySingleDocument() {
-        GetResponse response = connection.client().prepareGet()
-                .setIndex("alarm_20180421")
-                .setType("anomaly_scenarios")
-                .setId("AWOk_ceVqoKXGlv_HxbT")
+        SearchResponse response = connection.client().prepareSearch(SCENARIO_SETTING_INDEX)
+//                .set()
+                .setTypes(SCENARIO_SETTING_TYPE)
+                .setQuery(QueryBuilders.termQuery("name", "taikang"))
+//                .setId("AWOk_ceVqoKXGlv_HxbT")
                 .get();
-        String data = response.getSourceAsString();
+        String data = response.getHits().getHits()[0].getSourceAsString();
         System.out.println("single document query: " + data);
     }
 
