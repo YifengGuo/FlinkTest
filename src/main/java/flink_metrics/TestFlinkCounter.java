@@ -1,5 +1,6 @@
 package flink_metrics;
 
+import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -13,6 +14,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * Created by guoyifeng on 9/19/18
@@ -42,8 +45,11 @@ public class TestFlinkCounter {
                 .keyBy(0)
                 .reduce(new MyReducer());
 
-        output.print();
         env.execute();
+        output.print();
+
+//        Map<String, Object> accumulatorMap = env.execute().getAllAccumulatorResults();
+
     }
 }
 
@@ -64,7 +70,7 @@ class MyMapper extends RichMapFunction<String, Tuple2<String, Integer>> {
         String[] tokens = s.split(" ");
         Tuple2<String, Integer> out = new Tuple2<>(tokens[0], Integer.parseInt(tokens[1]));
         this.counter.inc();
-        LOG.info("current input count is " + this.counter.getCount());
+//        LOG.info("current input count is " + this.counter.getCount());
         return out;
     }
 }
