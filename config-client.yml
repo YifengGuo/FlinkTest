@@ -1,2 +1,68 @@
 info:
   profile: dev
+
+propertySources:
+  server:
+    port: 8088
+  spring:
+    application:
+      name: hanstreaming
+    http:
+      encoding:
+        enabled: true
+        charset: UTF-8
+      multipart:
+        max-file-size: 1000MB
+        max-request-size: 1000MB
+
+  #zuul:
+  #  host:
+  #    connect-timeout-millis: 120000
+  #    socket-timeout-millis: 120000
+  #  routes:
+  #    ueba:
+  #      path: /ueba/**
+  #      url: http://172.16.150.31:8080
+  #      strip-prefix: true
+
+  #es:
+  #  cluster-name: es-jw-darpa
+  #  hosts: ["172.16.150.31"]
+  #  port: 29300
+
+  collector:
+    host: 172.16.150.189
+    port: 9989
+
+  hal:
+    host: 172.16.150.149
+    port: 8085
+
+  flink:
+    cluster: 0.0.0.0:6123
+    run: /home/sonice/Applications/flink/bin/flink
+    task-manager-host: 0.0.0.0
+    state-server-proxy-port: 9069
+    endpoint: 0.0.0.0:8081
+
+  kafka:
+    server: 172.16.150.189:9092
+    zookeeper: 172.16.150.189:2181
+    group: ueba-event-process-
+    group-test: ueba-event-process-test-
+
+  cmd:
+    javac: /bin/javac
+
+  # dynamic compilation output directory
+  output: output
+
+  es:
+    cluster.name: "es-jw-darpa"
+    hosts: ["172.16.150.172"]
+    http.port: "29200"
+    transport.tcp.port: "29300"
+
+  redis:
+    host: "172.16.150.189"
+    port: "6379"
