@@ -1,5 +1,7 @@
 package elastic_search_test;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import elastic_search_test.config.ElasticsearchConnection;
 import org.apache.lucene.index.Term;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -28,6 +30,7 @@ import org.elasticsearch.search.aggregations.metrics.avg.AvgBuilder;
 import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -311,7 +314,7 @@ public class HanstreamingElasticsearchTest {
 
     @Test
     public void test172Data() throws Exception {
-        connection.connect(ES_CLUSTER_NAME, "172.16.150.172", ES_PORT);
+        connection.connect(ES_CLUSTER_NAME, "172.16.150.149", ES_PORT);
         QueryBuilder queryBuilder = QueryBuilders.boolQuery();
         ((BoolQueryBuilder) queryBuilder).must(QueryBuilders.termQuery("scenario_id", "AWOk_sh5qoKXGlv_Hxfk"));
         ((BoolQueryBuilder) queryBuilder).must(QueryBuilders.existsQuery("scenario"));
@@ -324,6 +327,42 @@ public class HanstreamingElasticsearchTest {
         for (SearchHit hit : updateSearchResponse.getHits().getHits()) {
             System.out.println(hit.getSourceAsString());
         }
+    }
+
+    @Test
+    public void fromMapRefactor() {
+        SearchResponse response = connection.client().prepareSearch("ueba_settings")
+                .setTypes("user_info")
+                .setSize(1000)
+                .setScroll(new TimeValue(60000))
+                .setQuery(QueryBuilders.matchAllQuery()).get();
+
+        JSONObject res = new JSONObject();
+        JSONArray data = new JSONArray();
+        while (true) {
+            for (SearchHit hit : response.getHits().getHits()) {
+                Map<String, Object> sourceMap = hit.getSource();
+                JSONObject curr = new JSONObject(sourceMap);
+                data.add(curr);
+            }
+
+            response = connection.client().prepareSearchScroll(response.getScrollId())
+                    .setScroll(new TimeValue(60000)).get();
+
+            if (response.getHits().getHits().length == 0) {
+                break;
+            }
+        }
+
+        res.put("data", data);
+        res.put("total", response.getHits().getTotalHits());
+
+        data.stream().forEach(o -> System.out.println(o));
+    }
+
+    @After
+    public void close() {
+        connection.close();
     }
 
 
