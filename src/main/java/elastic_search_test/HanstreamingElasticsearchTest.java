@@ -64,6 +64,7 @@ public class HanstreamingElasticsearchTest {
      */
     @Test
     public void querySingleDocument() {
+//        GetResponse response = connection.client().prepareGet("", "", "").get();
         SearchResponse response = connection.client().prepareSearch(SCENARIO_SETTING_INDEX)
 //                .set()
                 .setTypes(SCENARIO_SETTING_TYPE)
