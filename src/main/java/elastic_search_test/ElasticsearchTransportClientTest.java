@@ -5,10 +5,13 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.MetricsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
@@ -145,5 +148,23 @@ public class ElasticsearchTransportClientTest {
         responseMap.forEach((k, v) -> {
             System.out.println(k + " " + v);
         });
+    }
+
+    @Test
+    public void testAggQuerytoString() {
+        QueryBuilder qb = QueryBuilders.rangeQuery("occur_time").to(1539334992074L).from(1530400200000L);
+        System.out.println(((RangeQueryBuilder) qb).toString());
+
+        AggregationBuilder aggregationBuilder = AggregationBuilders
+                .dateHistogram("period")
+                .field("occur_time")
+                .interval(1000) // vary based on user's setting
+                .subAggregation(AggregationBuilders
+                        .terms("agg")
+                        .include((new String[]{"PC-8371"}))// only aggregate items appeard on the top_x list
+                        .order(Terms.Order.count(false))  // sort the users bucket to descending order
+                        .field("user_name")
+                        .size(5));
+        System.out.println(aggregationBuilder.toString());
     }
 }
